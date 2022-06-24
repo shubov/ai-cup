@@ -3,68 +3,39 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
-### Simple Fully Connected FeedForward Neural Network
 class LSTM(nn.Module):
-    def __init__(self,
-                 input_size: int):
-        """
-        LSTM model
-        Args
-        input_size: dimensions in the feature space.
-        """
+    """
+    LSTM implementation
+
+    """
+
+    def __init__(self, num_classes, input_size, hidden_size, num_layers):
         super(LSTM, self).__init__()
-        self.hidden_layers = input_size
-        # lstm1, lstm2, linear are all layers in the network
-        self.lstm1 = nn.LSTMCell(1, self.hidden_layers)
-        self.lstm2 = nn.LSTMCell(self.hidden_layers, self.hidden_layers)
-        self.linear = nn.Linear(self.hidden_layers, 1)
-        
-    def forward(self, x, future_preds=0):
-        outputs, num_samples = [], x.size(0)
-        h_t = torch.zeros(n_samples, self.hidden_layers, dtype=torch.float32)
-        c_t = torch.zeros(n_samples, self.hidden_layers, dtype=torch.float32)
-        h_t2 = torch.zeros(n_samples, self.hidden_layers, dtype=torch.float32)
-        c_t2 = torch.zeros(n_samples, self.hidden_layers, dtype=torch.float32)
-        
-        for time_step in x.split(1, dim=1):
-            # N, 1
-            h_t, c_t = self.lstm1(input_t, (h_t, c_t)) # initial hidden and cell states
-            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2)) # new hidden and cell states
-            output = self.linear(h_t2) # output from the last FC layer
-            outputs.append(output)
-            
-        for i in range(future_preds):
-            # this only generates future predictions if we pass in future_preds>0
-            # mirrors the code above, using last output/prediction as input
-            h_t, c_t = self.lstm1(output, (h_t, c_t))
-            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
-            output = self.linear(h_t2)
-            outputs.append(output)
-            # transform list to tensor    
-        outputs = torch.cat(outputs, dim=1)
-        
-        return outputs
+        self.num_classes = num_classes
+        self.num_layers = num_layers
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size,
+                            num_layers=num_layers, batch_first=True)
+        self.fc1 = nn.Linear(hidden_size, 32)
+        self.fc2 = nn.Linear(32, 16)
+        self.fc3 = nn.Linear(16, 1)
+        self.activation = nn.ReLU()
 
 
 
 
-
-class SeasonalPredictor(BaseEstimator):
-    def __init__(self,
-                 gap: int = 7 ,
-                 date_col:str = 'date'):
-        self.gap = gap
-        self.date_col = date_col
-
-    def fit(self, X, y):
-        self.dates_ = X[self.date_col]
-        self.y_ = np.array(y)
-        return self
-
-    def predict(self, X):
-        pred_dates = (X[self.date_col] - pd.to_timedelta(self.gap, unit='d')).values
-        return self.y_[np.where(np.isin(self.dates_, pred_dates))[0]]
+    def forward(self, x):
+        h_0 = torch.zeros(self.num_layers, 61, self.hidden_size).requires_grad_()
+        c_0 = torch.zeros(self.num_layers, 61, self.hidden_size).requires_grad_()
+        # Propagate input through LSTM
+        #out, self.hidden = self.lstm(x, (h_0, c_0))
+        out, hn = self.lstm(x, (h_0, c_0))
+        output=self.activation(self.fc3(self.fc2(self.fc1(out))))
+        return output
 
 
 
@@ -86,17 +57,19 @@ def train_model(model, data, device, **params):
             seq = sample[0].float().to(device)
             labels = sample[1].float().to(device)
             optimizer.zero_grad()
-            y_pred = model(seq)
-            loss = loss_function(y_pred.squeeze(), labels)
+            #batch_size=list(labels.shape)
+            out=model(seq)
+            #print(out.squeeze())
+            #print(labels)
+            loss = loss_function(out.squeeze(), labels)
             epoch_loss += loss.item()
             loss.backward()
             optimizer.step()
-
         # print every epoch
         if i % 1 == 0:
             print(f'epoch: {i:3} loss: {epoch_loss:10.8f}')
 
     # save weights
-    torch.save(model.state_dict(), "model.h5")
+    torch.save(model.state_dict(), "model_2.h5")
     print("Finished training and model saved!")
 
