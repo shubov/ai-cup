@@ -31,12 +31,13 @@ class GroupedTimeSeriesSplit(_BaseKFold):
         Gap (in days) between the training and test set.
     """
 
-    def __init__(self, train_window: int = 38, test_window= 7, train_gap: int = 0, test_gap: int = 0):
+    def __init__(self, train_window: int = 38, test_window= 7, train_gap: int = 0, test_gap: int = 0, freq: str = 'D'):
         self.train_window = train_window
         self.test_window = test_window
         self.train_gap = train_gap
         self.test_gap = test_gap
         self.n_folds_ = None
+        self.freq = freq
 
     def split(self, X: pd.DataFrame, y, dates:Union[pd.Series, np.ndarray], *_):
         """Generate indices to split data into training and test set according to provided dates.
@@ -65,7 +66,7 @@ class GroupedTimeSeriesSplit(_BaseKFold):
             dates = pd.to_datetime(dates)
 
         start_date, end_date = dates.min(), dates.max()
-        date_range = pd.date_range(start_date, end_date)
+        date_range = pd.date_range(start_date, end_date, freq=self.freq)
         n_dates = len(date_range)
 
         indices = np.arange(n_dates)
