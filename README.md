@@ -1,4 +1,4 @@
-# Ai-cup
+# Ai-cup/E.ON day ahead smart meter forecasting
 
 ## General Setting
 
@@ -10,5 +10,5 @@ This data science challenge task entails estimating day-ahead-forecasts for upto
 
 ## Project structure 
 
-In this project, we were working in several directions to find the best way to solve this problem. Linear regression as a baseline, LSTM as a neural network, Merlion as an ensemble tool, and transformer. Different approaches are placed in different folders, according to the name.
+In this project, we were working in several directions to find the best way to solve this problem. Linear regression as a baseline, LSTM as a neural network, Merlion as an ensemble tool, and Transformer. Different approaches are placed in different folders, according to the name.
 
