@@ -1,0 +1,4 @@
+pytorch-forecasting
+torch
+numpy
+pytorch-lightning
